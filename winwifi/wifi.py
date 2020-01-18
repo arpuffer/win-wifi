@@ -1,7 +1,7 @@
 '''Wrapper commands for Windows netsh wlan utility'''
 
 import subprocess
-from .utils import flatten_kwargs
+from .utils import _flatten_kwargs
 
 NETSH_WLAN = 'netsh wlan {}'
 SHOW = NETSH_WLAN.format('show {}')
@@ -45,23 +45,9 @@ class Wifi():
     """Wifi state and commands"""
     def __init__(self):
         self.interface = self._load_interface()
-        self._networks = None
-        self._profiles = None
-
-    @property
-    def networks(self):
-        if self._networks is None:
-            self._load_networks()
-        return self._networks
-
-    @property
-    def profiles(self):
-        if self._profiles is None:
-            self._load_profiles()
-        return self._profiles
 
     @staticmethod
-    def _netsh_wlan(cmd: str):
+    def _call(cmd: str):
         p = subprocess.Popen(cmd, shell=True,
                              stderr=subprocess.PIPE,
                              stdout=subprocess.PIPE)
@@ -71,27 +57,27 @@ class Wifi():
         return output
 
     def _load_interface(self):
-        output = self._netsh_wlan(SHOW_INTERFACES)
+        output = self._call(SHOW_INTERFACES)
         # parse output here
         return output
 
-    def _load_profiles(self):
+    def profiles(self):
         cmd = SHOW_PROFILE.format('')
-        output = self._netsh_wlan(cmd)
+        output = self._call(cmd)
         # parse output here
         self._profiles = output
 
-    def _load_networks(self):
-        output = self._netsh_wlan(SHOW_NETWORKS)
+    def networks(self):
+        output = self._call(SHOW_NETWORKS)
         # parse output here
         self._networks = output
 
     def disconnect(self):
-        self._netsh_wlan(DISCONNECT)
+        self._call(DISCONNECT)
 
     def connect(self, **kwargs):
         if kwargs.keys() not in ('name', 'ssid', 'interface'):
             raise KeyError
-        args = flatten_kwargs(kwargs)
-        self._netsh_wlan(CONNECT.format(args))
+        args = _flatten_kwargs(kwargs)
+        self._call(CONNECT.format(args))
 
