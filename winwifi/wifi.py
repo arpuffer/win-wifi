@@ -1,4 +1,10 @@
-'''Wrapper commands for Windows netsh wlan utility'''
+'''Wrapper commands for Windows netsh wlan utility
+
+Copyright (c) 2020 Alex Puffer. All rights reserved.
+
+This work is licensed under the terms of the MIT license.  
+For a copy, see <https://opensource.org/licenses/MIT>.
+'''
 
 import subprocess
 from .utils import _flatten_kwargs
