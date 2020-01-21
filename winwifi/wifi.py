@@ -19,6 +19,7 @@ SHOW_INTERFACES = SHOW.format('interface')
 DISCONNECT = NETSH_WLAN.format('disconnect')
 CONNECT = NETSH_WLAN.format('connect {}')
 ADD_PROFILE = NETSH_WLAN.format('add profile filename={}')
+DEL_PROFILE = NETSH_WLAN.format('delete profile {}')
 
 PATH = os.path.realpath(os.path.dirname(__file__))
 XML_PROFILE = os.path.join(PATH, '{}.xml')
@@ -163,6 +164,12 @@ class Wifi():
             filename = profile.to_xml()
             self._call(ADD_PROFILE.format(filename))
             profile._clear_xml()
+
+    def delete_profile(self, profile: Union[Profile, str]):
+        if isinstance(profile, Profile):
+            profile = profile.name
+        if profile not in self.profiles:
+            self._call(DEL_PROFILE.format(profile)
 
     def _parse_profiles(self, profile_result: str):
         return re.findall(' : (.*\n)', profile_result)
