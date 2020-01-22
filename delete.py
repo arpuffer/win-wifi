@@ -1,10 +1,10 @@
-from winwifi import Wifi, WiFiError
+from winwifi import Wifi
 
 
-def test():
-    a = Wifi()
-    print(a.interface)
+wifi = Wifi()
 
+networks = wifi.networks()
+print(networks)
 
-if __name__ == '__main__':
-    test()
+interface = wifi.interface
+print(interface)
