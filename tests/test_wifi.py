@@ -1,5 +1,4 @@
 import os
-from unittest import mock
 from winwifi import Wifi, WiFiError, Interface, Profile
 
 import pytest
@@ -7,18 +6,12 @@ import pytest
 DIR = os.path.dirname(__file__)
 TEST_XML = os.path.join(DIR, 'test_profile.xml')
 
+
 def test_wifi_interface():
     """Basic __init__ behvaior"""
     wifi = Wifi()
     interface = wifi.interface
     assert isinstance(interface, Interface)
-
-@mock.patch('winwifi.Wifi._load_interface')
-def test_wifi_interface_load_called(load_interface):
-    """wifi.interface calls _load_interface"""
-    wifi = Wifi()
-    interface = wifi.interface
-    load_interface.assert_called()
 
 
 def test_call_error():
