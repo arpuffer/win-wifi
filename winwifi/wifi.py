@@ -1,29 +1,29 @@
-'''Wrapper commands for Windows netsh wlan utility
+"""Wrapper commands for Windows netsh wlan utility
 
 Copyright (c) 2020 Alex Puffer. All rights reserved.
 
 This work is licensed under the terms of the MIT license.
 For a copy, see <https://opensource.org/licenses/MIT>.
-'''
+"""
 import logging
 import os
 import re
 import subprocess
 from typing import List, NamedTuple, Union
 
-NETSH_WLAN = 'netsh wlan {}'
-SHOW = NETSH_WLAN.format('show {}')
-SHOW_NETWORKS = SHOW.format('networks')
-SHOW_PROFILE = SHOW.format('profile {}')
-SHOW_INTERFACES = SHOW.format('interface')
-DISCONNECT = NETSH_WLAN.format('disconnect')
-CONNECT = NETSH_WLAN.format('connect {}')
+NETSH_WLAN = "netsh wlan {}"
+SHOW = NETSH_WLAN.format("show {}")
+SHOW_NETWORKS = SHOW.format("networks")
+SHOW_PROFILE = SHOW.format('profile "{}"')
+SHOW_INTERFACES = SHOW.format("interface")
+DISCONNECT = NETSH_WLAN.format("disconnect")
+CONNECT = NETSH_WLAN.format('connect "{}"')
 ADD_PROFILE = NETSH_WLAN.format('add profile filename="{}"')
 DEL_PROFILE = NETSH_WLAN.format('delete profile "{}"')
 
 PATH = os.path.realpath(os.path.dirname(__file__))
-XML_PROFILE = os.path.join(PATH, '{}.xml')
-XML_TEMPLATE = XML_PROFILE.format('profile_template')
+XML_PROFILE = os.path.join(PATH, "{}.xml")
+XML_TEMPLATE = XML_PROFILE.format("profile_template")
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +32,7 @@ class WiFiError(Exception):
     """Error for WiFi commands"""
 
 
-class Interface():
+class Interface:
     def __init__(self, **kwargs):
         self.name = None
         self.description = None
@@ -61,10 +61,10 @@ class Network(NamedTuple):
     encryption: str
 
 
-class Profile():
+class Profile:
     """Connection Profile info and creation"""
-    def __init__(self, ssid, name=None,
-                 authentication='', encryption='', password=''):
+
+    def __init__(self, ssid, name=None, authentication="", encryption="", password=""):
         self.ssid = ssid
         if name is None:
             self.name = ssid
@@ -78,15 +78,17 @@ class Profile():
     def to_xml(self, filename=None):
         if filename is None:
             filename = self.name
-        with open(XML_TEMPLATE, 'r') as infile:
+        with open(XML_TEMPLATE, "r") as infile:
             template = infile.read()
-            output = template.format(name=self.name,
-                                     ssid=self.ssid,
-                                     authentication=self.authentication,
-                                     encryption=self.encryption,
-                                     password=self.password)
+            output = template.format(
+                name=self.name,
+                ssid=self.ssid,
+                authentication=self.authentication,
+                encryption=self.encryption,
+                password=self.password,
+            )
         self._path = XML_PROFILE.format(filename)
-        with open(self._path, 'w') as outfile:
+        with open(self._path, "w") as outfile:
             outfile.write(output)
         return self._path
 
@@ -95,8 +97,9 @@ class Profile():
         self._path = None
 
 
-class Wifi():
+class Wifi:
     """Wifi state and commands"""
+
     @property
     def interface(self) -> Interface:
         """Return first interface reported by 'netsh wlan show interface'.
@@ -126,13 +129,11 @@ class Wifi():
         Returns:
             str: stdout from subprocess call
         """
-        proc = subprocess.Popen(cmd, shell=True,
-                                stderr=subprocess.PIPE,
-                                stdout=subprocess.PIPE)
-        print(cmd)
+        proc = subprocess.Popen(cmd, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+        logger.debug(cmd)
         output, error = proc.communicate()
-        print(output.decode())
-        if b'error' in output.lower() and b':' in output:
+        logger.debug(output.decode())
+        if b"error" in output.lower() and b":" in output:
             raise WiFiError(output)
         if error:
             raise WiFiError(error)
@@ -145,27 +146,34 @@ class Wifi():
         Returns:
             bool: True if connected to a network, False otherwise
         """
-        if self.interface.state == 'connected':
+        if self.interface.state == "connected":
             return True
         return False
 
     def _parse_interfaces(self, interface_result: str) -> dict:
+        """
+        Args:
+            interface_result (str): [description]
+
+        Returns:
+            dict: [description]
+        """
         # TODO: if no cards? if 2+ cards?
         output = {}
-        result = interface_result.replace('(Mbps)', '').split('\r\n\r\n')[1].split('\r\n')
-        result = [[x.strip() for x in y.split(' : ')] for y in result]
+        result = interface_result.replace("(Mbps)", "").split("\r\n\r\n")[1].split("\r\n")
+        result = [[x.strip() for x in y.split(" : ")] for y in result]
         for i, line in enumerate(result):
             if len(line) == 2:
                 key, val = [x.strip() for x in line]
                 output[key] = val.strip()
             elif len(line) == 1:
-                output[result[i-1][0]] += (', ' + line[0].strip())
-        output = {k.replace(' ', '_').lower(): v for k, v in output.items()}
+                output[result[i - 1][0]] += ", " + line[0].strip()
+        output = {k.replace(" ", "_").lower(): v for k, v in output.items()}
         return output
 
     @property
     def profiles(self):
-        cmd = SHOW_PROFILE.format('')
+        cmd = SHOW_PROFILE.format("")
         output = self._call(cmd)
         return self._parse_profiles(output)
 
@@ -179,7 +187,7 @@ class Wifi():
         return self._parse_networks(output)
 
     def _parse_networks(self, networks_result: str):
-        regex = r'ssid.*:\s(.*)\n.*type.*:\s(.*)\s\n.*authentication.*:\s(.*)\s\n.*encryption.*:\s(.*)\s\n'
+        regex = r"ssid.*:\s(.*)\n.*type.*:\s(.*)\s\n.*authentication.*:\s(.*)\s\n.*encryption.*:\s(.*)\s\n"
         results = re.findall(regex, networks_result, re.IGNORECASE)  # List[tuple]
         return [Network(*x) for x in results]
 
@@ -229,5 +237,5 @@ class Wifi():
             self._call(DEL_PROFILE.format(profile))
 
     def _parse_profiles(self, profile_result: str):
-        result = re.findall(' : (.*\n)', profile_result)
+        result = re.findall(" : (.*\n)", profile_result)
         return [x.strip() for x in result]
