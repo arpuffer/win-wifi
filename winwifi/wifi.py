@@ -14,7 +14,7 @@ from typing import List, NamedTuple, Union
 NETSH_WLAN = "netsh wlan {}"
 SHOW = NETSH_WLAN.format("show {}")
 SHOW_NETWORKS = SHOW.format("networks")
-SHOW_PROFILE = SHOW.format('profile "{}"')
+SHOW_PROFILE = SHOW.format('profile {}')
 SHOW_INTERFACES = SHOW.format("interface")
 DISCONNECT = NETSH_WLAN.format("disconnect")
 CONNECT = NETSH_WLAN.format('connect "{}"')
@@ -170,6 +170,16 @@ class Wifi:
                 output[result[i - 1][0]] += ", " + line[0].strip()
         output = {k.replace(" ", "_").lower(): v for k, v in output.items()}
         return output
+
+    @property
+    def profile(self):
+        name = self.interface.__dict__.get('profile')
+        cmd = SHOW_PROFILE.format('"%s"' % name)
+        output = self._call(cmd)
+        return self._parse_profile(output)
+
+    def _parse_profile(self, profile):
+        pass
 
     @property
     def profiles(self):
